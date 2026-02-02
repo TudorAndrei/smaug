@@ -19,7 +19,17 @@ const DEFAULT_CONFIG = {
   // Off by default - enable with --media flag or config
   includeMedia: false,
 
-  // Where to store the markdown archive
+  // Where to store the bookmark archive
+  // archiveMode:
+  //   - 'files'  -> one markdown file per bookmark (recommended)
+  //   - 'single' -> one combined markdown file (legacy)
+  archiveMode: 'files',
+
+  // Per-bookmark archive directory (used when archiveMode === 'files')
+  // Each bookmark is stored at: ${archiveDir}/${YYYY-MM-DD}/${tweetId}.md
+  archiveDir: './bookmarks',
+
+  // Legacy single-file archive (used when archiveMode === 'single')
   archiveFile: './bookmarks.md',
 
   // Where to store pending bookmarks (JSON) before processing
@@ -185,10 +195,17 @@ export function loadConfig(configPath) {
     }
   }
 
+  // Determine archive mode.
+  // Default is per-bookmark files. Legacy single-file mode is opt-in via archiveMode: "single".
+  const inferredArchiveMode = Object.prototype.hasOwnProperty.call(fileConfig, 'archiveMode')
+    ? fileConfig.archiveMode
+    : (fileConfig.archiveDir ? 'files' : DEFAULT_CONFIG.archiveMode);
+
   // Merge with defaults
   const config = {
     ...DEFAULT_CONFIG,
     ...fileConfig,
+    archiveMode: inferredArchiveMode,
     twitter: {
       ...DEFAULT_CONFIG.twitter,
       ...fileConfig.twitter
@@ -206,6 +223,12 @@ export function loadConfig(configPath) {
   };
 
   // Override with environment variables
+  if (process.env.ARCHIVE_MODE) {
+    config.archiveMode = process.env.ARCHIVE_MODE;
+  }
+  if (process.env.ARCHIVE_DIR) {
+    config.archiveDir = process.env.ARCHIVE_DIR;
+  }
   if (process.env.ARCHIVE_FILE) {
     config.archiveFile = process.env.ARCHIVE_FILE;
   }
@@ -264,6 +287,7 @@ export function loadConfig(configPath) {
   }
 
   // Expand ~ in all path-related config values
+  config.archiveDir = expandTilde(config.archiveDir);
   config.archiveFile = expandTilde(config.archiveFile);
   config.pendingFile = expandTilde(config.pendingFile);
   config.stateFile = expandTilde(config.stateFile);
@@ -291,6 +315,10 @@ export function initConfig(targetPath = './smaug.config.json') {
     source: 'bookmarks',
     // EXPERIMENTAL: Include media attachments (photos, videos, GIFs)
     // includeMedia: false,
+    // Archive mode: 'files' (one file per bookmark) or 'single' (legacy)
+    archiveMode: 'files',
+    archiveDir: './bookmarks',
+    // archiveFile is used only when archiveMode is 'single'
     archiveFile: './bookmarks.md',
     pendingFile: './.state/pending-bookmarks.json',
     stateFile: './.state/bookmarks-state.json',

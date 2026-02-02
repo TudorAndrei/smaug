@@ -4,16 +4,14 @@ Process prepared Twitter bookmarks into a markdown archive with rich analysis an
 
 ## Before You Start
 
-### CRITICAL: Use Edit Tool for bookmarks.md (DATA LOSS PREVENTION)
+### CRITICAL: One File Per Bookmark (NO combined bookmarks.md)
 
-**NEVER use the Write tool on bookmarks.md.** The Write tool REPLACES the entire file, destroying all historical entries.
+Smaug archives each bookmark to its own markdown file under `archiveDir` (from config).
 
-**ALWAYS use the Edit tool** to insert new entries into bookmarks.md. The Edit tool preserves existing content while making targeted insertions.
+- **Default behavior:** Use the `Write` tool to create a new file for each bookmark.
+- **If the file already exists** (e.g. force re-process): do **NOT** overwrite it blindly. Use `Edit` to update the generated sections and preserve any user notes.
 
-- `Write` = Replace entire file (DANGEROUS - causes data loss)
-- `Edit` = Insert/modify specific content (SAFE - preserves existing entries)
-
-This applies to BOTH sequential processing AND the merge step in parallel processing.
+The legacy single-file `bookmarks.md` workflow is no longer the default.
 
 ### Multi-Step Parallel Protocol (CRITICAL)
 
@@ -37,14 +35,13 @@ TodoWrite({ todos: [
 ]})
 ```
 
-**For bookmarks at or above threshold (MUST use parallel subagents with batch files):**
+**For bookmarks at or above threshold (MUST use parallel subagents):**
 ```javascript
 TodoWrite({ todos: [
   {content: "Read pending bookmarks", status: "pending", activeForm: "Reading pending bookmarks"},
-  {content: "Spawn subagents to write batch files", status: "pending", activeForm: "Spawning subagents"},
+  {content: "Spawn subagents to write bookmark files", status: "pending", activeForm: "Spawning subagents"},
   {content: "Wait for all subagents to complete", status: "pending", activeForm: "Waiting for subagents"},
-  {content: "Merge batch files into bookmarks.md", status: "pending", activeForm: "Merging batch files"},
-  {content: "Clean up batch and pending files", status: "pending", activeForm: "Cleaning up files"},
+  {content: "Clean up pending file", status: "pending", activeForm: "Cleaning up pending file"},
   {content: "Commit and push changes", status: "pending", activeForm: "Committing changes"},
   {content: "Return summary", status: "pending", activeForm: "Returning summary"}
 ]})
@@ -56,25 +53,22 @@ TodoWrite({ todos: [
 - Only ONE task `in_progress` at a time
 - Never skip final steps (commit, summary)
 
-**CRITICAL for parallel processing:** Spawn ALL subagents in ONE message, each writing to a batch file:
+**CRITICAL for parallel processing:** Spawn ALL subagents in ONE message. Each subagent writes bookmark markdown files directly under `archiveDir`:
 ```javascript
 // Send ONE message with multiple Task calls - they run in parallel
 // Use model="haiku" for cost-efficient parallel processing (~50% cost savings)
-// Each subagent writes to .state/batch-N.md, NOT to bookmarks.md!
-Task(subagent_type="general-purpose", model="haiku", prompt="Process batch 0: write to .state/batch-0.md: {json for bookmarks 0-4}")
-Task(subagent_type="general-purpose", model="haiku", prompt="Process batch 1: write to .state/batch-1.md: {json for bookmarks 5-9}")
-Task(subagent_type="general-purpose", model="haiku", prompt="Process batch 2: write to .state/batch-2.md: {json for bookmarks 10-14}")
+Task(subagent_type="general-purpose", model="haiku", prompt="Process batch 0 (oldest first): write bookmark files for bookmarks 0-4")
+Task(subagent_type="general-purpose", model="haiku", prompt="Process batch 1 (oldest first): write bookmark files for bookmarks 5-9")
+Task(subagent_type="general-purpose", model="haiku", prompt="Process batch 2 (oldest first): write bookmark files for bookmarks 10-14")
 // ... all batches in the SAME message
 ```
 
-After ALL subagents complete, merge batch files into bookmarks.md in chronological order.
-
 **DO NOT:**
-- Have subagents write directly to bookmarks.md (race conditions!)
-- Use the Write tool on bookmarks.md (DATA LOSS - destroys existing entries!)
+- Write to a combined `bookmarks.md` file
+- Overwrite an existing per-bookmark file with `Write` (use `Edit` instead)
 - Process bookmarks above threshold sequentially (too slow)
 - Send Task calls in separate messages (defeats parallelism)
-- Skip the merge step
+- Skip cleanup of `pending-bookmarks.json`
 
 ### Setup
 
@@ -83,15 +77,17 @@ After ALL subagents complete, merge batch files into bookmarks.md in chronologic
 date +"%A, %B %-d, %Y"
 ```
 
-Use this format for date section headers (e.g., "Thursday, January 2, 2026").
+Bookmark files use `dateISO` for folder names (e.g., `2026-01-02`).
 
 **Load paths and categories from config:**
 ```bash
-node -e "const c=require('./smaug.config.json'); console.log(JSON.stringify({archiveFile:c.archiveFile, pendingFile:c.pendingFile, stateFile:c.stateFile, categories:c.categories}, null, 2))"
+node -e "const c=require('./smaug.config.json'); console.log(JSON.stringify({archiveMode:c.archiveMode, archiveDir:c.archiveDir, archiveFile:c.archiveFile, pendingFile:c.pendingFile, stateFile:c.stateFile, categories:c.categories}, null, 2))"
 ```
 
 This gives you:
-- `archiveFile`: Where to write the bookmark archive (e.g., `~/Obsidian_Vaults/.../bookmarks.md`)
+- `archiveMode`: `files` (one file per bookmark) or `single` (legacy)
+- `archiveDir`: Where to write per-bookmark files (e.g., `./bookmarks`)
+- `archiveFile`: Legacy single-file path (only if `archiveMode: single`)
 - `pendingFile`: Where pending bookmarks are stored
 - `stateFile`: Where processing state is tracked
 - `categories`: Custom category definitions
@@ -104,7 +100,7 @@ If no custom categories, use the defaults from `src/config.js`.
 Prepared bookmarks are in the `pendingFile` path from config (typically `./.state/pending-bookmarks.json` or a custom path).
 
 Each bookmark includes:
-- `id`, `author`, `authorName`, `text`, `tweetUrl`, `date`
+- `id`, `author`, `authorName`, `text`, `tweetUrl`, `createdAt`, `date`, `dateISO`
 - `tags[]` - folder tags from bookmark folders (e.g., `["ai-tools"]`)
 - `links[]` - each with `original`, `expanded`, `type`, and `content`
   - `type`: "github", "article", "video", "tweet", "media", "image"
@@ -117,9 +113,9 @@ Each bookmark includes:
 Categories define how different bookmark types are handled. Each category has:
 - `match`: URL patterns or keywords to identify this type
 - `action`: What to do with matching bookmarks
-  - `file`: Create a separate markdown file in the folder
-  - `capture`: Just add to bookmarks.md
-  - `transcribe`: Flag for future transcription, add to bookmarks.md with transcript note
+  - `file`: Create a knowledge file in the category folder (and ALWAYS create the per-bookmark file)
+  - `capture`: Create the per-bookmark file only
+  - `transcribe`: Create the per-bookmark file with a transcript-needed flag (and optionally a placeholder in the category folder)
 - `folder`: Where to save files (for `file` action)
 - `template`: Which template to use (`tool`, `article`, `podcast`, `video`)
 
@@ -173,9 +169,9 @@ Don't use generic titles like "Article" or "Tweet". Based on the content:
 Match each bookmark's links against category patterns (check `match` arrays). Use the first matching category, or fall back to `tweet`.
 
 **For each action type:**
-- `file`: Create a separate file in the category's folder using its template
-- `capture`: Just add to bookmarks.md (no separate file)
-- `transcribe`: Add to bookmarks.md with a "Needs transcript" flag, optionally create placeholder in folder
+- `file`: Create a knowledge file in the category's folder using its template
+- `capture`: No knowledge file
+- `transcribe`: No knowledge file by default; include a transcript-needed flag (you may also create a placeholder file in the category folder)
 
 **Special handling:**
 - Quote tweets: Include quoted tweet context in entry
@@ -183,71 +179,47 @@ Match each bookmark's links against category patterns (check `match` arrays). Us
 
 #### c. Add bookmark entry to archive (USE EDIT TOOL)
 
-**Use the Edit tool** to insert entries into the `archiveFile` (expand `~` to home directory). NEVER use Write - it will destroy existing entries.
+Create a per-bookmark markdown file under `archiveDir` using `Write`:
 
-**CRITICAL ordering rules for bookmarks.md:**
+- Path: `${archiveDir}/${bookmark.dateISO}/${bookmark.id}.md`
+- Ensure the date folder exists first (use `Bash`: `mkdir -p "${archiveDir}/${bookmark.dateISO}"`).
+- If the file already exists, use `Edit` and preserve anything under `## Notes`.
 
-The file must be in **descending chronological order** (newest dates at TOP, oldest at BOTTOM).
-
-1. **Read the existing file structure first** - note all existing date sections and their positions
-2. Use each bookmark's `date` field (already formatted as "Weekday, Month Day, Year")
-3. **For each bookmark's date:**
-   - If that date section already exists: insert the entry immediately AFTER the `# Date` header (above other entries in that section)
-   - If no section exists for that date: create a new `# Weekday, Month Day, Year` section at the **correct chronological position** (NOT always at top!)
-4. **Chronological positioning for new date sections:**
-   - Find where the date belongs chronologically among existing sections
-   - Insert BEFORE any older dates, AFTER any newer dates
-   - Example: If file has "Jan 3" then "Jan 1", and you need "Jan 2", insert between them
-5. Do NOT create duplicate date sections - always search the entire file first
-6. Separate date sections with `---`
-
-**Processing order:** Bookmarks in pending-bookmarks.json are sorted oldest-first. Process them in order so that when each is inserted at the top of its date section, the final result has correct ordering within each day.
-
-**Header hierarchy:**
-- `# Thursday, January 2, 2026` - Date headers (h1)
-- `## @author - title` - Individual bookmark entries (h2)
-
-**Standard entry format:**
+**Standard bookmark file format:**
 ```markdown
-## @{author} - {descriptive_title}
+---
+tweet_id: "{id}"
+author: "{author}"
+author_name: "{authorName}"
+date: "{dateISO}"
+tweet_url: "{tweetUrl}"
+tags: [{tag1}, {tag2}]
+category: "{category_key}"
+status: "needs_transcript" (only for transcribe)
+filed:
+  - "./knowledge/tools/{slug}.md" (only if filed)
+---
+
+# {descriptive_title}
+
 > {tweet_text}
 
-- **Tweet:** {tweet_url}
-- **Link:** {expanded_url}
-- **Tags:** [[tag1]] [[tag2]] (if bookmark has tags from folders)
-- **Filed:** [{filename}](./knowledge/tools/{slug}.md) (if filed)
-- **What:** {1-2 sentence description of what this actually is}
+{Optional: quoted/reply context block}
+
+## Links
+- Tweet: {tweetUrl}
+- Link: {expanded_url} (if present)
+
+## What
+{1-2 sentence description of what this actually is}
+
+## Notes
+
 ```
 
-**Tags format:** Use wiki-link style `[[TagName]]` for each tag. Only include the **Tags:** line if the bookmark has tags in its `tags` array (from folder configuration). Example: `- **Tags:** [[AI]] [[Coding]]`
+**Quoted tweets:** add a short block between the main quote and Links section.
 
-**For quote tweets, include the quoted content:**
-```markdown
-## @{author} - {descriptive_title}
-> {tweet_text}
->
-> *Quoting @{quoted_author}:* {quoted_text}
-
-- **Tweet:** {tweet_url}
-- **Quoted:** {quoted_tweet_url}
-- **Tags:** [[tag1]] [[tag2]] (if bookmark has tags)
-- **What:** {description}
-```
-
-**For replies, include parent context:**
-```markdown
-## @{author} - {descriptive_title}
-> *Replying to @{parent_author}:* {parent_text}
->
-> {tweet_text}
-
-- **Tweet:** {tweet_url}
-- **Parent:** {parent_tweet_url}
-- **Tags:** [[tag1]] [[tag2]] (if bookmark has tags)
-- **What:** {description}
-```
-
-Separate entries with `---` only between different dates, not between entries on the same day.
+**Replies:** include a short "Replying to" context block.
 
 ### 3. Clean Up Pending File
 
@@ -271,8 +243,11 @@ After all bookmarks are processed and filed, commit the changes:
 # Get today's date for commit message
 DATE=$(date +"%b %-d")
 
-# Stage all bookmark-related changes (use archiveFile path from config)
-git add "$ARCHIVE_FILE"  # The archiveFile path from config
+# Get archiveDir from config and expand ~
+ARCHIVE_DIR=$(node -e "const c=require('./smaug.config.json'); const p=c.archiveDir||'./bookmarks'; console.log(p.replace(/^~/, process.env.HOME || process.env.USERPROFILE))")
+
+# Stage all bookmark-related changes
+git add "$ARCHIVE_DIR"  # The archiveDir path from config
 git add knowledge/
 
 # Commit with descriptive message
@@ -294,7 +269,7 @@ Replace "N" with actual count. If any knowledge files were created, mention them
 Processed N bookmarks:
 - @author1: Tool Name → filed to knowledge/tools/tool-name.md
 - @author2: Article Title → filed to knowledge/articles/article-slug.md
-- @author3: Plain tweet → captured only
+- @author3: Plain tweet → bookmark file only
 
 Committed and pushed.
 ```
@@ -418,65 +393,28 @@ status: needs_transcript
 
 ## Parallel Processing (REQUIRED when above threshold)
 
-**CRITICAL: Subagents must NOT write directly to bookmarks.md** - this causes race conditions and scrambled ordering.
+Because the archive is **one file per bookmark**, subagents can safely write bookmark files directly (no merge step).
 
-### Two-Phase Approach:
-
-**Phase 1: Parallel batch processing (subagents write to temp files)**
-
-Spawn multiple Task subagents in ONE message. Each writes to a separate temp file:
-
-```
-Task 1: model="haiku", "Process batch 0" → writes to .state/batch-0.md
-Task 2: model="haiku", "Process batch 1" → writes to .state/batch-1.md
-Task 3: model="haiku", "Process batch 2" → writes to .state/batch-2.md
-Task 4: model="haiku", "Process batch 3" → writes to .state/batch-3.md
-```
+**Rules:**
+- Each subagent processes its assigned bookmarks in order (oldest first)
+- For each bookmark, create the date folder (via `Bash`: `mkdir -p "${archiveDir}/${dateISO}"`), then `Write` the bookmark file
+- If a bookmark file already exists, use `Edit` and preserve anything under `## Notes`
+- Knowledge files (`knowledge/tools/*`, `knowledge/articles/*`, etc.) can also be created directly
 
 **Subagent prompt template:**
 ```
-Process these bookmarks and write ONLY the markdown entries (no date headers) to .state/batch-{N}.md
-
-Bookmarks to process (in order - oldest first):
+You are processing these bookmarks (oldest first):
 {JSON array of 5-10 bookmarks}
 
-For each bookmark, write an entry in this format:
----
-DATE: {bookmark.date}
-## @{author} - {title}
-> {tweet text}
+Config:
+- archiveDir: {from smaug.config.json}
 
-- **Tweet:** {url}
-- **Tags:** [[tag1]] [[tag2]] (if tags exist)
-- **What:** {description}
-
-Also create knowledge files (./knowledge/tools/*.md, ./knowledge/articles/*.md) as needed.
-DO NOT touch bookmarks.md - only write to .state/batch-{N}.md
+For each bookmark:
+1) mkdir -p "{archiveDir}/{dateISO}"
+2) Write "{archiveDir}/{dateISO}/{id}.md" using the standard bookmark file format
+3) If category action is "file", also create the knowledge file in the category folder
+4) If category action is "transcribe", set status: needs_transcript in the bookmark file
 ```
-
-**Phase 2: Sequential merge (main agent combines batches) - USE EDIT TOOL**
-
-After ALL subagents complete:
-1. Read the EXISTING bookmarks.md file first (preserve all current content!)
-2. Read all .state/batch-*.md files in order (batch-0, batch-1, batch-2...)
-3. Parse each entry (separated by `---`) and extract the DATE line
-4. **Use the Edit tool** to insert each entry into bookmarks.md at the correct chronological position
-5. Delete the temp batch files
-
-**CRITICAL:** Step 4 MUST use the Edit tool, not Write. Using Write will replace the entire file and destroy all historical entries.
-
-**Merge logic for bookmarks.md:**
-- File is descending order (newest dates at top)
-- For each entry from batch files (processed in order):
-  - Find or create the date section at correct position
-  - Insert entry at TOP of that date section
-- Since batches are oldest-first, entries end up in correct order
-
-**DO NOT:**
-- Have subagents write directly to bookmarks.md (causes race conditions)
-- Use the Write tool on bookmarks.md (causes DATA LOSS - destroys all existing entries)
-- Process all bookmarks sequentially (too slow)
-- Skip the merge step
 
 ## Example Output
 
@@ -492,10 +430,10 @@ Processed 4 bookmarks:
    → Filed: knowledge/articles/gisthost-gist-rendering.md
 
 3. @michael_chomsky: ResponsiveDialog Component Pattern
-   → Quote tweet endorsing @jordienr's UI pattern
-   → Captured with quoted context
+    → Quote tweet endorsing @jordienr's UI pattern
+    → Bookmark file only (with quoted context)
 
 4. @CasJam: Claude Code Video Post-Production
-   → Plain tweet (video content)
-   → Captured only, flagged for transcript
+    → Plain tweet (video content)
+    → Bookmark file only, flagged for transcript
 ```

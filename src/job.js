@@ -444,6 +444,24 @@ async function invokeAICLI(config, bookmarkCount, options = {}) {
     let bookmarksProcessed = 0;
     const totalBookmarks = bookmarkCount;
 
+    const archiveMode = config.archiveMode || (config.archiveDir ? 'files' : 'single');
+    const archiveFileBase = config.archiveFile ? path.basename(config.archiveFile) : null;
+    const archiveDirFragment = config.archiveDir
+      ? config.archiveDir.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/$/, '')
+      : null;
+
+    const isArchiveWrite = (filePath) => {
+      const p = (filePath || '').replace(/\\/g, '/');
+      if (!p) return false;
+      if (archiveMode === 'files' && archiveDirFragment) {
+        return p.includes(`/${archiveDirFragment}/`) || p.startsWith(`${archiveDirFragment}/`) || p.startsWith(`./${archiveDirFragment}/`);
+      }
+      if (archiveFileBase) {
+        return p.endsWith(`/${archiveFileBase}`) || p === archiveFileBase || p.endsWith(archiveFileBase);
+      }
+      return false;
+    };
+
     const parallelTasks = new Map();
     let tasksSpawned = 0;
     let tasksCompleted = 0;
@@ -522,7 +540,7 @@ async function invokeAICLI(config, bookmarkCount, options = {}) {
                   filesWritten.push(fileName);
                   if (dir) {
                     printStatus(`    💎 Hoarded → ${dir}/${fileName}\n`);
-                  } else if (fileName === 'bookmarks.md') {
+                  } else if (isArchiveWrite(input.file_path)) {
                     bookmarksProcessed++;
                     const fireIntensity = '🔥'.repeat(Math.min(Math.ceil(bookmarksProcessed / 2), 5));
                     printStatus(`  ${fireIntensity} ${progressBar(bookmarksProcessed, totalBookmarks)} [${elapsed(startTime)}]`);
@@ -531,7 +549,7 @@ async function invokeAICLI(config, bookmarkCount, options = {}) {
                   }
                 } else if (toolName === 'Edit' && input.file_path) {
                   const fileName = input.file_path.split('/').pop();
-                  if (fileName === 'bookmarks.md') {
+                  if (isArchiveWrite(input.file_path)) {
                     bookmarksProcessed++;
                     const fireIntensity = '🔥'.repeat(Math.min(Math.ceil(bookmarksProcessed / 2), 5));
                     printStatus(`  ${fireIntensity} ${progressBar(bookmarksProcessed, totalBookmarks)} [${elapsed(startTime)}]`);
@@ -756,6 +774,17 @@ export async function run(options = {}) {
   }
 
   try {
+    // Ensure per-bookmark archive directory exists before AI writes into it
+    if ((config.archiveMode || (config.archiveDir ? 'files' : 'single')) === 'files' && config.archiveDir) {
+      const base = config.projectRoot || process.cwd();
+      const archiveDir = path.isAbsolute(config.archiveDir)
+        ? config.archiveDir
+        : path.join(base, config.archiveDir);
+      if (!fs.existsSync(archiveDir)) {
+        fs.mkdirSync(archiveDir, { recursive: true });
+      }
+    }
+
     // Check for existing pending bookmarks first
     let pendingData = null;
     let bookmarkCount = 0;

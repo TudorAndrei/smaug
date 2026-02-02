@@ -567,13 +567,187 @@ export async function fetchContent(url, type, config) {
 }
 
 export function getExistingBookmarkIds(config) {
+  const ids = new Set();
+
+  const archiveMode = config.archiveMode || (config.archiveDir ? 'files' : 'single');
+
+  // Per-bookmark files mode: prefer fast filename-based ID detection
+  if (archiveMode === 'files' && config.archiveDir) {
+    try {
+      const root = config.archiveDir;
+      if (!fs.existsSync(root)) return ids;
+      const stat = fs.statSync(root);
+      if (!stat.isDirectory()) return ids;
+
+      const stack = [root];
+      while (stack.length > 0) {
+        const dir = stack.pop();
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const ent of entries) {
+          if (ent.isDirectory()) {
+            stack.push(path.join(dir, ent.name));
+            continue;
+          }
+          if (!ent.isFile()) continue;
+          if (!ent.name.endsWith('.md')) continue;
+
+          // Canonical: <tweetId>.md
+          const nameMatch = ent.name.match(/^(\d{10,})\.md$/);
+          if (nameMatch) {
+            ids.add(nameMatch[1]);
+            continue;
+          }
+
+          // Fallback: scan the first chunk for a tweet status URL
+          try {
+            const fp = path.join(dir, ent.name);
+            const buf = fs.readFileSync(fp, 'utf8').slice(0, 8192);
+            const m = buf.match(/x\.com\/\w+\/status\/(\d{10,})/);
+            if (m) ids.add(m[1]);
+          } catch {
+            // ignore unreadable files
+          }
+        }
+      }
+
+      // Back-compat: also include IDs from legacy single-file archive (if present)
+      // so switching to per-file mode doesn't re-process already archived bookmarks.
+      try {
+        if (config.archiveFile && fs.existsSync(config.archiveFile)) {
+          const content = fs.readFileSync(config.archiveFile, 'utf8');
+          const matches = content.matchAll(/x\.com\/\w+\/status\/(\d{10,})/g);
+          for (const m of matches) ids.add(m[1]);
+        }
+      } catch {
+        // ignore legacy file read errors
+      }
+
+      return ids;
+    } catch {
+      return ids;
+    }
+  }
+
+  // Legacy single-file mode
   try {
     const content = fs.readFileSync(config.archiveFile, 'utf8');
-    const matches = content.matchAll(/x\.com\/\w+\/status\/(\d+)/g);
-    return new Set([...matches].map(m => m[1]));
+    const matches = content.matchAll(/x\.com\/\w+\/status\/(\d{10,})/g);
+    for (const m of matches) ids.add(m[1]);
+    return ids;
   } catch {
-    return new Set();
+    return ids;
   }
+}
+
+/**
+ * Save a single bookmark to its own markdown file
+ * Creates the file at: archiveDir/YYYY-MM-DD/tweetId.md
+ */
+export function saveBookmarkFile(config, bookmark) {
+  const archiveDir = config.archiveDir;
+  if (!archiveDir) {
+    throw new Error('archiveDir not configured');
+  }
+
+  // Build the date folder path
+  const dateFolder = bookmark.dateISO || dayjs(bookmark.createdAt).format('YYYY-MM-DD');
+  const bookmarkDir = path.join(archiveDir, dateFolder);
+
+  // Ensure directory exists
+  if (!fs.existsSync(bookmarkDir)) {
+    fs.mkdirSync(bookmarkDir, { recursive: true });
+  }
+
+  // Build file path
+  const filePath = path.join(bookmarkDir, `${bookmark.id}.md`);
+
+  // Skip if already exists (don't overwrite)
+  if (fs.existsSync(filePath)) {
+    return { path: filePath, created: false };
+  }
+
+  // Build markdown content
+  const frontmatter = {
+    tweet_id: String(bookmark.id),
+    author: bookmark.author,
+    author_name: bookmark.authorName,
+    date: bookmark.dateISO || dayjs(bookmark.createdAt).format('YYYY-MM-DD'),
+    tweet_url: bookmark.tweetUrl,
+    tags: bookmark.tags || [],
+    links_count: bookmark.links?.length || 0
+  };
+
+  // YAML frontmatter
+  const fmLines = Object.entries(frontmatter)
+    .map(([key, value]) => {
+      if (Array.isArray(value)) {
+        return `${key}: [${value.map(v => `"${v}"`).join(', ')}]`;
+      }
+      return `${key}: "${value}"`;
+    })
+    .join('\n');
+
+  // Content sections
+  let content = `---\n${fmLines}\n---\n\n`;
+  content += `# @${bookmark.author}\n\n`;
+  content += `> ${bookmark.text || ''}\n\n`;
+
+  // Add reply context if present
+  if (bookmark.isReply && bookmark.replyContext) {
+    content += `*Replying to @${bookmark.replyContext.author}:*\n`;
+    content += `> ${bookmark.replyContext.text}\n\n`;
+  }
+
+  // Add quote context if present
+  if (bookmark.isQuote && bookmark.quoteContext) {
+    content += `*Quoting @${bookmark.quoteContext.author}:*\n`;
+    content += `> ${bookmark.quoteContext.text}\n\n`;
+  }
+
+  // Links section
+  if (bookmark.links && bookmark.links.length > 0) {
+    content += `## Links\n\n`;
+    for (const link of bookmark.links) {
+      const displayUrl = link.expanded || link.original;
+      content += `- ${displayUrl}`;
+      if (link.type && link.type !== 'unknown') {
+        content += ` (${link.type})`;
+      }
+      content += '\n';
+
+      // Add content preview for articles/github
+      if (link.content) {
+        if (link.type === 'github' && link.content.fullName) {
+          content += `  - **${link.content.fullName}**`;
+          if (link.content.description) {
+            content += `: ${link.content.description}`;
+          }
+          content += '\n';
+        } else if (link.type === 'x-article' && link.content.title) {
+          content += `  - **${link.content.title}**\n`;
+          if (link.content.previewText) {
+            content += `  - ${link.content.previewText.slice(0, 200)}${link.content.previewText.length > 200 ? '...' : ''}\n`;
+          }
+        } else if (link.content.text && link.type === 'article') {
+          const preview = link.content.text.slice(0, 200).replace(/\n/g, ' ');
+          content += `  - ${preview}${link.content.text.length > 200 ? '...' : ''}\n`;
+        }
+      }
+    }
+    content += '\n';
+  }
+
+  // Tweet URL
+  content += `## Source\n\n`;
+  content += `- [Original Tweet](${bookmark.tweetUrl})\n`;
+
+  // Notes placeholder
+  content += `\n## Notes\n\n`;
+
+  // Write file
+  fs.writeFileSync(filePath, content, 'utf8');
+
+  return { path: filePath, created: true };
 }
 
 export async function fetchAndPrepareBookmarks(options = {}) {
@@ -651,11 +825,14 @@ export async function fetchAndPrepareBookmarks(options = {}) {
 
       // Format date from tweet's createdAt, falling back to current date
       let date;
+      let dateISO;
       if (bookmark.createdAt) {
         const tweetDate = dayjs(bookmark.createdAt).tz(config.timezone || 'America/New_York');
         date = tweetDate.format('dddd, MMMM D, YYYY');
+        dateISO = tweetDate.format('YYYY-MM-DD');
       } else {
         date = now.format('dddd, MMMM D, YYYY');
+        dateISO = now.format('YYYY-MM-DD');
       }
       const author = bookmark.author?.username || bookmark.user?.screen_name || 'unknown';
 
@@ -862,6 +1039,7 @@ export async function fetchAndPrepareBookmarks(options = {}) {
         text,
         tweetUrl: `https://x.com/${author}/status/${bookmark.id}`,
         createdAt: bookmark.createdAt,
+        dateISO,
         links,
         media,
         tags,
@@ -879,6 +1057,25 @@ export async function fetchAndPrepareBookmarks(options = {}) {
     } catch (error) {
       console.error(`  Error processing bookmark ${bookmark.id}: ${error.message}`);
     }
+  }
+
+  // Save individual bookmark files immediately (if archiveMode is 'files')
+  const archiveMode = config.archiveMode || (config.archiveDir ? 'files' : 'single');
+  let savedCount = 0;
+  if (archiveMode === 'files' && config.archiveDir && prepared.length > 0) {
+    console.log(`\nSaving ${prepared.length} bookmark files to ${config.archiveDir}...`);
+    for (const bookmark of prepared) {
+      try {
+        const result = saveBookmarkFile(config, bookmark);
+        if (result.created) {
+          savedCount++;
+          console.log(`  ✓ ${bookmark.id}.md`);
+        }
+      } catch (error) {
+        console.error(`  Error saving bookmark file ${bookmark.id}: ${error.message}`);
+      }
+    }
+    console.log(`\nSaved ${savedCount} new bookmark files.`);
   }
 
   // Merge prepared bookmarks into pending file

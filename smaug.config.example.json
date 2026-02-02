@@ -1,4 +1,6 @@
 {
+  "archiveMode": "files",
+  "archiveDir": "./bookmarks",
   "archiveFile": "./bookmarks.md",
   "pendingFile": "./.state/pending-bookmarks.json",
   "stateFile": "./.state/bookmarks-state.json",

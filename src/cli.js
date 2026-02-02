@@ -12,7 +12,7 @@
  *   init     - Create a config file (non-interactive)
  */
 
-import { fetchAndPrepareBookmarks } from './processor.js';
+import { fetchAndPrepareBookmarks, getExistingBookmarkIds } from './processor.js';
 import { initConfig, loadConfig } from './config.js';
 import { execSync } from 'child_process';
 import fs from 'fs';
@@ -124,6 +124,9 @@ This will set up Smaug to automatically archive your Twitter bookmarks.
   // Step 4: Create config
   console.log('Step 4: Creating configuration...');
   const config = {
+    archiveMode: 'files',
+    archiveDir: './bookmarks',
+    // archiveFile is used only when archiveMode is 'single'
     archiveFile: './bookmarks.md',
     pendingFile: './.state/pending-bookmarks.json',
     stateFile: './.state/bookmarks-state.json',
@@ -140,6 +143,12 @@ This will set up Smaug to automatically archive your Twitter bookmarks.
   console.log('  ✓ Created smaug.config.json');
   console.log('  ⚠️  This file contains your credentials and is gitignored.');
   console.log('     Never commit it or share it publicly.\n');
+
+  // Create common output directories
+  fs.mkdirSync('./.state', { recursive: true });
+  fs.mkdirSync('./bookmarks', { recursive: true });
+  fs.mkdirSync('./knowledge/tools', { recursive: true });
+  fs.mkdirSync('./knowledge/articles', { recursive: true });
 
   // Step 5: Ask about automation
   console.log('Step 5: Automation Setup\n');
@@ -185,7 +194,7 @@ This will set up Smaug to automatically archive your Twitter bookmarks.
 🐉 Setup Complete!
 ━━━━━━━━━━━━━━━━━━━━━
 
-Your bookmarks will be saved to: ./bookmarks.md
+Your bookmarks will be saved to: ./bookmarks/
 
 Commands:
   npx smaug run    Run full job (fetch + process with Claude)
@@ -309,9 +318,11 @@ async function main() {
 
     case 'status': {
       const config = loadConfig();
+      const archiveMode = config.archiveMode || (config.archiveDir ? 'files' : 'single');
+      const archiveLabel = archiveMode === 'files' ? config.archiveDir : config.archiveFile;
 
       console.log('Smaug Status\n');
-      console.log(`Archive:     ${config.archiveFile}`);
+      console.log(`Archive:     ${archiveLabel}`);
       console.log(`Source:      ${config.source || 'bookmarks'}`);
       console.log(`Media:       ${config.includeMedia ? '✓ enabled (experimental)' : 'disabled (use --media to enable)'}`);
       console.log(`Twitter:     ${config.twitter?.authToken ? '✓ configured' : '✗ not configured'}`);
@@ -329,7 +340,10 @@ async function main() {
         console.log(`Last fetch:  ${state.last_check || 'never'}`);
       }
 
-      if (fs.existsSync(config.archiveFile)) {
+      if (archiveMode === 'files') {
+        const count = getExistingBookmarkIds(config).size;
+        console.log(`Archived:    ${count} bookmarks`);
+      } else if (fs.existsSync(config.archiveFile)) {
         const content = fs.readFileSync(config.archiveFile, 'utf8');
         const entryCount = (content.match(/^## @/gm) || []).length;
         console.log(`Archived:    ${entryCount} bookmarks`);

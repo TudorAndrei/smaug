@@ -5,7 +5,7 @@
  */
 
 // Core processing
-export { fetchAndPrepareBookmarks } from './processor.js';
+export { fetchAndPrepareBookmarks, saveBookmarkFile } from './processor.js';
 export {
   fetchBookmarks,
   fetchTweet,

@@ -92,7 +92,7 @@ If you don't want to use the wizard to make it easy, you can manually put your s
    - X/Twitter long-form articles (full content via bird CLI)
    - Quote tweets and reply threads (full context)
 4. **Invokes Claude Code** to analyze and categorize each tweet
-5. **Saves to markdown** organized by date with rich context
+5. **Saves to markdown** as one file per bookmark (organized by date folders)
 6. **Files to knowledge library** - GitHub repos to `knowledge/tools/`, articles to `knowledge/articles/`
 
 ## Running Manually
@@ -154,7 +154,7 @@ Categories define how different bookmark types are handled. Smaug comes with sen
 | **github** | github.com | file | `./knowledge/tools/` |
 | **article** | medium.com, substack.com, dev.to, blogs | file | `./knowledge/articles/` |
 | **x-article** | x.com/i/article/* | file | `./knowledge/articles/` |
-| **tweet** | (fallback) | capture | bookmarks.md only |
+| **tweet** | (fallback) | capture | bookmark file only |
 
 🔜 _Note: Transcription is flagged but not yet automated. PRs welcome!_
 
@@ -180,7 +180,7 @@ Example X article bookmark:
 ### Actions
 
 - **file**: Create a separate markdown file with rich metadata
-- **capture**: Add to bookmarks.md only (no separate file)
+- **capture**: Create a bookmark file only (no knowledge file)
 - **transcribe**: Flag for future transcription *(auto-transcription coming soon! PRs welcome)*
 
 ### Custom Categories
@@ -232,7 +232,7 @@ If you've organized your Twitter bookmarks into folders, Smaug can preserve that
 When folders are configured:
 - Smaug fetches from each folder separately
 - Each bookmark gets tagged with its folder name
-- Tags appear in `bookmarks.md` entries and knowledge file frontmatter
+- Tags appear in bookmark files and knowledge file frontmatter
 
 **Note:** Twitter's API doesn't return folder membership when fetching all bookmarks at once, so Smaug must fetch each folder individually.
 
@@ -266,30 +266,25 @@ crontab -e
 
 ## Output
 
-### bookmarks.md
+### bookmarks/YYYY-MM-DD/*.md
 
-Your bookmarks organized by date:
+Your bookmarks saved as individual files, organized by date folders:
 
 ```markdown
-# Thursday, January 2, 2026
+---
+tweet_id: "123456789"
+author: "simonw"
+date: "2026-01-02"
+tweet_url: "https://x.com/simonw/status/123456789"
+---
 
-## @simonw - Gist Host Fork for Rendering GitHub Gists
+# Gist Host Fork for Rendering GitHub Gists
+
 > I forked the wonderful gistpreview.github.io to create gisthost.github.io
 
-- **Tweet:** https://x.com/simonw/status/123456789
 - **Link:** https://gisthost.github.io/
 - **Filed:** [gisthost-gist-rendering.md](./knowledge/articles/gisthost-gist-rendering.md)
 - **What:** Free GitHub Pages-hosted tool that renders HTML files from Gists.
-
----
-
-## @tom_doerr - Whisper-Flow Real-time Transcription
-> This is amazing - real-time transcription with Whisper
-
-- **Tweet:** https://x.com/tom_doerr/status/987654321
-- **Link:** https://github.com/dimastatz/whisper-flow
-- **Filed:** [whisper-flow.md](./knowledge/tools/whisper-flow.md)
-- **What:** Real-time speech-to-text using OpenAI Whisper with streaming support.
 ```
 
 ### knowledge/tools/*.md
@@ -331,6 +326,8 @@ Example `smaug.config.json`:
 ```json
 {
   "source": "bookmarks",
+  "archiveMode": "files",
+  "archiveDir": "./bookmarks",
   "archiveFile": "./bookmarks.md",
   "pendingFile": "./.state/pending-bookmarks.json",
   "stateFile": "./.state/bookmarks-state.json",
@@ -352,7 +349,9 @@ Example `smaug.config.json`:
 |--------|---------|-------------|
 | `source` | `bookmarks` | What to fetch: `bookmarks` (default), `likes`, or `both` |
 | `includeMedia` | `false` | **EXPERIMENTAL**: Include media attachments (photos, videos, GIFs) |
-| `archiveFile` | `./bookmarks.md` | Main archive file |
+| `archiveMode` | `files` | Archive format: `files` (per bookmark) or `single` |
+| `archiveDir` | `./bookmarks` | Where per-bookmark markdown files are written |
+| `archiveFile` | `./bookmarks.md` | Legacy single-file archive (used when `archiveMode: single`) |
 | `timezone` | `America/New_York` | For date formatting |
 | `cliTool` | `claude` | AI CLI to use: `claude` or `opencode` |
 | `autoInvokeClaude` | `true` | Auto-run Claude Code for analysis |
@@ -363,7 +362,7 @@ Example `smaug.config.json`:
 | `parallelThreshold` | `8` | Min bookmarks before parallel processing kicks in |
 | `webhookUrl` | `null` | Discord/Slack webhook for notifications |
 
-Environment variables also work: `AUTH_TOKEN`, `CT0`, `SOURCE`, `INCLUDE_MEDIA`, `ARCHIVE_FILE`, `TIMEZONE`, `CLI_TOOL`, `CLAUDE_MODEL`, `OPENCODE_MODEL`, etc.
+Environment variables also work: `AUTH_TOKEN`, `CT0`, `SOURCE`, `INCLUDE_MEDIA`, `ARCHIVE_MODE`, `ARCHIVE_DIR`, `ARCHIVE_FILE`, `TIMEZONE`, `CLI_TOOL`, `CLAUDE_MODEL`, `OPENCODE_MODEL`, etc.
 
 ### Experimental: Media Attachments
 
@@ -485,11 +484,11 @@ This is configured in `.claude/commands/process-bookmarks.md` with `model="haiku
 
 This means either:
 1. No bookmarks were fetched (check bird CLI credentials)
-2. All fetched bookmarks already exist in `bookmarks.md`
+2. All fetched bookmarks already exist in your archive (`bookmarks/` by default)
 
 To start fresh:
 ```bash
-rm -rf .state/ bookmarks.md knowledge/
+rm -rf .state/ bookmarks/ bookmarks.md knowledge/
 mkdir -p .state knowledge/tools knowledge/articles
 npx smaug run
 ```
