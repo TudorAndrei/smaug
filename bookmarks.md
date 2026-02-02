@@ -1,3 +1,294 @@
+# Sunday, February 1, 2026
+
+## @alexellisuk - Slicer: Firecracker VM REST API
+> Slicer is self-hosted software for Firecracker VMs as an easily consumable REST API and guest agent/SDK (cp, exec, shell, port-forward)
+>
+> Services = persistent i.e. Kubernetes
+> Sandboxes = disposable lifecycle
+>
+> Users now get a free hosted VM as a bonus. @slicervm https://t.co/ORujM5EELS
+
+- **Tweet:** https://x.com/alexellisuk/status/2018075802768654702
+- **What:** Self-hosted infrastructure tool providing REST API and guest SDK for managing Firecracker VMs with persistent service and disposable sandbox capabilities; includes a free hosted VM offering.
+
+---
+
+## @benjaminakar - New Domain Launch
+> new domain. https://t.co/jpufjE5CM7
+
+- **Tweet:** https://x.com/benjaminakar/status/2018045610646261867
+- **What:** Brief announcement of a new domain launch; limited context available in the bookmark.
+
+---
+
+## @oprydai - Four Hobbies Framework for Life Balance
+> you need four hobbies. no more, no less.
+>
+> create
+> bring something into existence. write, build, draw, code, cook. creation grounds you. it turns thought into reality.
+>
+> consume
+> read books. watch films. study art. this feeds taste and perspective. good input sharpens good output.
+>
+> cavort
+> move your body daily. walk, lift, run, dance. motion stabilizes the mind. a stagnant body distorts thinking.
+>
+> commune
+> have a community. friends, family, peers. isolation corrodes judgment. shared reality keeps you sane.
+>
+> miss one, and the system degrades.
+> keep all four, and life stays balanced, generative, and human.
+
+- **Tweet:** https://x.com/oprydai/status/2018014525682073747
+- **What:** Prescriptive framework for balanced living built on four equally essential hobbies: creation, consumption, physical activity, and community connection.
+
+---
+
+# Saturday, January 31, 2026
+
+## @pixperk - Chug ETL Pipeline (PostgreSQL to ClickHouse)
+> chug is one of my favorite projects by me.
+>
+> a streaming etl pipeline that moves data from postgresql to clickhouse. streamed ~30M rows in under 4 minutes at 145k rows/sec with constant memory. cdc keeps analytics fresh without full reloads. single go binary + clean web ui.
+>
+> web ui still wip.
+
+- **Tweet:** https://x.com/pixperk/status/2017539126380183702
+- **What:** High-performance streaming ETL tool written in Go for moving PostgreSQL data to ClickHouse with change data capture (CDC), achieving 145k rows/sec throughput with minimal memory overhead.
+
+---
+
+# Friday, January 30, 2026
+
+## @justinskycak - Skill Trees as a Meta-Skill
+> The most transferable skill you can acquire is learning how to climb skill trees -- especially ones that are brutally hierarchical.
+>
+> This meta-skill is abstract, but you acquire it by practicing on particulars. You gotta lean into specific domains and acquire measurable, demonstrable skills.
+>
+> But once you see it, once you get a feeling for the process, you see it everywhere.
+>
+> *Quoting @readswithravi:* This book is worth reading. Never stop learning.
+
+- **Tweet:** https://x.com/justinskycak/status/2017055539084349926
+- **Quoted:** https://x.com/readswithravi/status/2016595286445941030
+- **What:** Insight on learning meta-skills through hierarchical domain practice; a framework for understanding skill acquisition applicable across disciplines.
+
+---
+
+# Tuesday, January 27, 2026
+
+## @stevy_smith - Agent Skill for Codebase-Aware OG Image Generation
+> *Replying to @rincidium:* I made this Agent Skill which explores the codebase to understand your design system and generates it in code which I feel gets the match better than offloading it to an image-gen model https://t.co/a7lW6EDXLZ
+
+- **Tweet:** https://x.com/stevy_smith/status/2015952056847040793
+- **Parent:** https://x.com/rincidium/status/2015930122776564113
+- **Filed:** [og-image-skill](./knowledge/tools/og-image-skill.md)
+- **What:** Agent Skill that analyzes codebase and design system to generate OG images in code rather than relying on image generation models. Better design system matching through code-based approach.
+
+---
+
+## @rincidium - OG Image Generation with Nano Banana Pro
+> Create an OG image for your website with Nano Banana Pro:
+>
+> Create a premium open-graph hero image for [BRAND]...
+
+- **Tweet:** https://x.com/rincidium/status/2015930122776564113
+- **What:** Announcement about creating open-graph (OG) images for social media sharing using Nano Banana Pro tool.
+
+---
+
+# Friday, January 23, 2026
+
+## @Dorialexander - Quality Content Discovery on X
+> wtf i finally get quality content on the corposlop network. https://t.co/CwZOGhBpfq
+
+- **Tweet:** https://x.com/Dorialexander/status/2014786701256724737
+- **What:** Observation about finding quality content on X/Twitter despite general platform concerns.
+
+---
+
+## @Eito_Miyamura - DSPy Abstractions Beyond Prompt Optimization
+> Wrote this to explain the power of the DSPy-style abstraction, beyond prompt optimisation
+>
+> Always found it hard to articulate why DSPy signatures & modules are great in concrete engineering terms, with benchmarks & POCs!
+
+- **Tweet:** https://x.com/Eito_Miyamura/status/2014761571113726362
+- **Quoted:** https://x.com/Eito_Miyamura/status/2014757193766093069?s=20
+- **What:** Technical explanation of DSPy framework advantages for engineering, focusing on why the abstraction (signatures & modules) matter beyond just prompt optimization, with benchmarks and POCs.
+
+---
+
+## @dbrookes - Bugsink: Self-Hosted Error Tracking Alternative to Sentry
+> *Replying to @thekitze:* next up on the list of cancelling subs: @sentry 🤡
+>
+> Bugsink is the one, works with Sentry SDK. Just change the DSN URL https://t.co/Qvq2RHLc8l
+
+- **Tweet:** https://x.com/dbrookes/status/2014680295199432871
+- **Parent:** https://x.com/thekitze/status/2014670202936688793
+- **Filed:** [bugsink](./knowledge/tools/bugsink.md)
+- **What:** Self-hosted error tracking solution that works with Sentry SDK by changing the DSN URL. Python-based alternative for teams wanting to cancel Sentry subscriptions.
+
+---
+
+## @Franc0Fernand0 - Software Design Principles for Changing Requirements
+> It's happened to every software engineer: you implement a feature, ship it to production, and everything works great.
+>
+> Then, a few weeks later, you get different requirements...
+>
+> - The Open-Closed Principle
+> - Dependency Injection
+> - Inversion of Control
+>
+> https://t.co/jmHUbpL5Ap
+
+- **Tweet:** https://x.com/Franc0Fernand0/status/2014650655730720875
+- **Link:** https://newsletter.francofernando.com/p/software-design-principles-that-matter
+- **What:** A discussion of three software design principles (Open-Closed Principle, Dependency Injection, and Inversion of Control) that help handle changing requirements—a common problem engineers face after shipping features.
+
+---
+
+## @hoeflatoor - Warren Buffett and Chinese Philosophy
+> Warren Buffett is spiritually Chinese btw...
+
+- **Tweet:** https://x.com/hoeflatoor/status/2014603586609520981
+- **Quoted:** https://x.com/FoundersPodcast/status/2014411236100997489
+- **What:** A brief quote tweet suggesting that Warren Buffett's principles and approach align with Chinese cultural values, in response to a Founders Podcast clip about his health discipline.
+
+---
+
+# Tuesday, January 20, 2026
+
+## @litteralyme0 - OpenAI's Financial Runway
+> "OpenAI could run out of money as soon as 2027"
+>
+> *Quoting @pubity:* OpenAI is rapidly losing money and is projected to lose $14 billion in 2026 alone. If they can't get another round of funding, OpenAI could run out of money as soon as 2027.
+
+- **Tweet:** https://x.com/litteralyme0/status/2013381136987136254
+- **Quoted:** https://x.com/pubity/status/2013089410598740345
+- **What:** A quote tweet highlighting OpenAI's projected $14 billion loss in 2026 and the risk of financial depletion by 2027 without additional funding.
+
+---
+
+# Monday, January 19, 2026
+
+## @gooby_esq - Huberman Podcast RLM Testing
+> threw this together to test RLM in DSPy on a dataset of huberman podcasts.
+>
+> works pretty good! don't have any way to eval this really but everything seems to be working as designed.
+>
+> going to move onto some legal stuff next for which I do have evals
+>
+> https://t.co/vuc572ZMzi
+
+- **Tweet:** https://x.com/gooby_esq/status/2013338327823335620
+- **Link:** https://github.com/halfprice06/huberman-rlm
+- **What:** A GitHub project experimenting with Reinforcement Learning from Manifold (RLM) in DSPy using Huberman Lab podcast data. The developer tested the implementation and found it working as designed, planning to apply similar techniques to legal domain work.
+
+---
+
+## @ryancarson - Nightly AI-Powered Action Item Generation Loop
+> I've figured out a new way of working that's unlocked my speed of iteration massively.
+>
+> I have a simple cron job that runs every night at midnight. It gathers information from my database on user activity, marketing stats, and a couple other data points that are important. It then feeds that data into Opus 4.5 and asks for one important action item that I should take based on this data, and then emails me.
+>
+> It also creates a markdown file with the recommendation, which is then stored in my reports folder in the GitHub repo. (This means I can fire up Amp anytime and chat either all of the historical recommendations whenever I want - learning about patterns.)
+>
+> I then look at this email every morning and decide whether or not to take action on it. Almost every time it surfaces something really valuable for me to iterate. So I just open Amp, tell it to action idea, and then ship it.
+>
+> Obviously, the next iteration of this is just to have Amp autonomously implement the suggestion by itself, and then I'll wake up to a PR instead of an email. Right now, though, I like the Human-In-The-Loop version of this.
+>
+> And as soon as we iterate enough like that, I'll probably just set it up to automatically take the suggestion, create the PR, and then I'll have a look at it.
+>
+> Obviously, you can take this loop even further by having many parts of your business evaluated this way. What's interesting to me is that this is what I used to rely on my VP of Marketing, my VP of Engineering, or my VP of Sales to do, but it happens automatically for about $0.15 per day.
+
+- **Tweet:** https://x.com/ryancarson/status/2013335112713109972
+- **What:** An automation pattern using Claude Opus 4.5 with scheduled cron jobs to generate daily action items based on business metrics, stored in a GitHub repo for pattern analysis. Currently human-in-the-loop, but designed to scale to autonomous PR generation.
+
+---
+
+## @coder_blvck - Pullbase: Git-Based GitOps for Traditional Servers
+> I am thrilled to launch @pullbase an open source project that treats every Linux server like a Git-managed resource
+>
+> Why Pullbase?
+> - Pull-based Go agent keeps every Linux server in its declared Git state.
+> - Continuous drift detection & auto-reconcile.
+> - Straightforward YAML configs and an intuitive web dashboard.
+> - Completely OSS
+> - Designed for teams of any size
+>
+> Try it, fork it, improve it:
+> 🔗 GitHub: https://t.co/JMNJavyuP7
+> 🔗 Docs:   https://t.co/1fB0Rg03p7
+> 🔗 Website: https://t.co/mkxWOa2TVF
+>
+> Contributions and feedback welcome!
+
+- **Tweet:** https://x.com/coder_blvck/status/2013194691047563560
+- **Link:** https://github.com/pullbase/pullbase
+- **Filed:** [pullbase](./knowledge/tools/pullbase.md)
+- **What:** Pullbase is an open-source Go-based tool that brings GitOps to traditional Linux servers, enabling declarative configuration management with automatic drift detection and reconciliation using Git as the source of truth.
+
+---
+
+# Sunday, January 18, 2026
+
+## @0xSero - Using Claude Sonnet 4.5 for Production Readiness Audits with Droid
+> One thing I really enjoyed today was using:
+>
+> /readiness-report in Droid
+>
+> This is actually a genius idea, it basically triggers a prompt to sonnet-4.5 and has it check a list of requirements for a production ready system.
+>
+> It then gets back to you with a checklist of like 100 things you should do and whether you've set them up in the repo or not.
+>
+> Here's Codex crunching for like 2.5 million tokens cleaning up my repo
+
+- **Tweet:** https://x.com/0xSero/status/2012887140980449730
+- **What:** A clever use of Claude Sonnet 4.5 within the Droid tool to generate comprehensive production readiness checklists, automatically checking which requirements are met in the codebase.
+
+---
+
+## @ScriptedAlchemy - Adapting ByteDance's Recommendation Engine for Stock Market Prediction
+> I wonder if…. I could use ByteDances recommendation engine and just train it to recommend stocks, instead of videos. https://t.co/mNicOmRWX8
+
+- **Tweet:** https://x.com/ScriptedAlchemy/status/2012717082765373628
+- **Link:** https://github.com/bytedance/monolith
+- **Filed:** [monolith](./knowledge/tools/monolith.md)
+- **What:** ByteDance's open-source Monolith recommendation system (Python, 9.2k stars) - a lightweight recommendation engine originally designed for video recommendations that could potentially be adapted for financial predictions.
+
+---
+
+# Saturday, January 17, 2026
+
+## @iximiuz - Uncloud: Lightweight Docker Orchestration for VMs
+> Have you been in a situation where using Kubernetes would be overkill, but deploying to a bunch of VMs with bespoke scripts or Ansible playbooks doesn't sound like fun either?
+>
+> Docker Swarm may or may not be dead, but the niche does exist, and projects like Kamal (by 37signals) and Uncloud (by Pasha Sviderski) are trying to cover it.
+>
+> If you haven't heard of the latter, Uncloud is a lightweight (compared to Kubernetes) tool for deploying and managing containerised applications across a network of Docker hosts.
+>
+> Anton Ovchinnikov​ recently published a ​step-by-step guide on iximiuz Labs​ showing how to set up an Uncloud cluster on a few VMs. Check it out: https://t.co/7ukY6fUmxa
+>
+> Traditionally, you can try all the commands from the tutorial right in the attached playground.
+
+- **Tweet:** https://x.com/iximiuz/status/2012583386649407578
+- **Link:** https://labs.iximiuz.com/tutorials/uncloud-create-cluster-ebebf72b
+- **What:** Uncloud is a lightweight Docker orchestration tool for managing containerized applications across VMs, positioned as a middle ground between simple VM deployment and full Kubernetes. Includes a hands-on setup guide.
+
+---
+
+## @thekitze - ESLint Rules for AI Agents (Max 300 Lines & Single Component per File)
+> i added only 2 eslint rules that help agents:
+> - max 300 lines per any file
+> - max 1 react component per file
+>
+> gl hf
+
+- **Tweet:** https://x.com/thekitze/status/2012568576469746093
+- **What:** A practical tip on ESLint configuration: two simple rules (max file length of 300 lines and one React component per file) that improve code organization for AI agents.
+
+---
+
 # Sunday, January 4, 2026
 
 ## @trq212 - AI alignment and interpretability resources
